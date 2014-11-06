@@ -67,17 +67,17 @@ cases.forEach(function(test){
       assert(/never-called/.test(str), 'never-called is in the jade file for mixins-unused');
       assert(!/never-called/.test(clientCode), 'never-called should be removed from the code');
     }
-    JSON.stringify(actual.trim()).should.equal(JSON.stringify(html));
+    actual.trim().should.equal(html);
     actual = Function('jade', clientCode + '\nreturn template;')(jade.runtime)({ title: 'Jade' });
     if (/filter/.test(test)) {
       actual = actual.replace(/\n| /g, '');
     }
-    JSON.stringify(actual.trim()).should.equal(JSON.stringify(html));
+    actual.trim().should.equal(html);
     actual = Function('jade', clientCodeDebug + '\nreturn template;')(jade.runtime)({ title: 'Jade' });
     if (/filter/.test(test)) {
       actual = actual.replace(/\n| /g, '');
     }
-    JSON.stringify(actual.trim()).should.equal(JSON.stringify(html));
+    actual.trim().should.equal(html);
   })
 });
 after(function () {

@@ -62,7 +62,7 @@
     }
   },
   "scripts": {
-    "test": "mocha -R spec && npm run coverage",
+    "test": "mocha -R spec --bail && npm run coverage",
     "coverage": "istanbul cover node_modules/mocha/bin/_mocha",
     "prepublish": "npm prune && linify transform bin && npm run build",
     "build": "npm run compile",
