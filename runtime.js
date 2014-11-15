@@ -128,7 +128,7 @@ exports.attr = function attr(key, val, escaped, terse) {
       console.warn('Jade will eliminate the double quotes around dates in ' +
                    'ISO form after 2.0.0');
     }
-    return ' ' + key + "='" + JSON.stringify(val).replace(/'/g, '&apos;') + "'";
+    return ' ' + key + "='" + JSON.stringify(val).replace(/&/g, '&amp;').replace(/'/g, '&apos;') + "'";
   } else if (escaped) {
     if (val && typeof val.toISOString === 'function') {
       console.warn('Jade will stringify dates in ISO form after 2.0.0');
