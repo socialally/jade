@@ -24,6 +24,7 @@ program
   .version(require('../package.json').version)
   .usage('[options] [dir|file ...]')
   .option('-O, --obj <str>', 'javascript options object')
+  .option('-L, --locals <str>', 'javascript locals object')
   .option('-o, --out <dir>', 'output the compiled html to <dir>')
   .option('-p, --path <path>', 'filename used to resolve includes')
   .option('-P, --pretty', 'compile pretty html output')
@@ -57,6 +58,17 @@ program.on('--help', function(){
 });
 
 program.parse(process.argv);
+
+// locals given, parse them
+
+var locals;
+if (program.locals) {
+  if (exists(program.locals)) {
+    locals = JSON.parse(fs.readFileSync(program.locals));
+  } else {
+    locals = eval('(' + program.locals + ')');
+  }
+}
 
 // options given, parse them
 
@@ -157,7 +169,7 @@ function stdin() {
       output = jade.compileClient(buf, options);
     } else {
       var fn = jade.compile(buf, options);
-      var output = fn(options);
+      var output = fn(locals);
     }
     process.stdout.write(output);
   }).resume();
@@ -177,13 +189,46 @@ function stdin() {
 
 function renderFile(path) {
   var re = /\.jade$/;
-  var stat = fs.lstatSync(path);
-  // Found jade file/\.jade$/
-  if (stat.isFile() && re.test(path)) {
-    var str = fs.readFileSync(path, 'utf8');
-    options.filename = path;
-    if (program.nameAfterFile) {
-      options.name = getNameFromFileName(path);
+  fs.lstat(path, function(err, stat) {
+    if (err) throw err;
+    // Found jade file
+    if (stat.isFile() && re.test(path)) {
+      fs.readFile(path, 'utf8', function(err, str){
+        if (err) throw err;
+        options.filename = path;
+        if (program.nameAfterFile) {
+          options.name = getNameFromFileName(path);
+        }
+        var fn = options.client ? jade.compileClient(str, options) : jade.compile(str, options);
+        var extname = options.client ? '.js' : '.html';
+        path = path.replace(re, extname);
+        if (program.out) path = join(program.out, basename(path));
+        var dir = resolve(dirname(path));
+        mkdirp(dir, 0755, function(err){
+          if (err) throw err;
+          try {
+            var output = options.client ? fn : fn(locals);
+            fs.writeFile(path, output, function(err){
+              if (err) throw err;
+              console.log('  \033[90mrendered \033[36m%s\033[0m', path);
+            });
+          } catch (e) {
+            if (options.watch) {
+              console.error(e.stack || e.message || e);
+            } else {
+              throw e
+            }
+          }
+        });
+      });
+    // Found directory
+    } else if (stat.isDirectory()) {
+      fs.readdir(path, function(err, files) {
+        if (err) throw err;
+        files.map(function(filename) {
+          return path + '/' + filename;
+        }).forEach(renderFile);
+      });
     }
     var fn = options.client ? jade.compileClient(str, options) : jade.compile(str, options);
 
